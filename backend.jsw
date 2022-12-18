@@ -1,0 +1,95 @@
+import wixData from 'wix-data';
+
+// gpt 3 
+const { Configuration, OpenAIApi } = require("openai");
+const configuration = new Configuration({
+  apiKey: "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",
+});
+const openai = new OpenAIApi(configuration);
+
+
+// send name request
+export async function namesReq(question, input) {
+  console.log(`starting name request | Input: ${input} | Question: ${question}`);
+  // question values
+  if (question === "Business Name"){
+    var query = `Generate a list of names that are catchy, easy to say, and relevant for the product idea based on the product idea summary 
+  Product idea summary: ${input}\nNames:`;
+  } else if (question === "Tagline") {
+    var query = `Generate a list of taglines for the product idea based on the product idea summary 
+  Product idea summary: ${input}\nTaglines:`;
+  } else if (question === "Group Name") {
+    var query = `Generate a list of group names for based on group purpose and information
+  Group purpose and information: ${input}\nGroup Names:`;
+  } else if (question === "Baby Name") {
+    var query = `Generate a list of baby names based the parent's interests
+  Parent Interests: ${input}\nBaby Names:`;
+  } else if (question === "Project Name") {
+    var query = `Generate a list of project names for based on project purpose and information
+  Project purpose and information: ${input}\nProject Names:`;
+  } else if (question === "Slogan") {
+    var query = `Generate a list of organization slogans based on the organization summary
+  Company summarty: ${input}\nSlogans:`;
+  } else if (question === "Motto") {
+    var query =`Generate a list of organization mottos based on the organization summary
+  Company summarty: ${input}\nMottos:`;
+  } else {
+    var query = `Query: ${question} Input: ${input} Answer:`;
+  }
+
+  // AI query
+  const response = await openai.createCompletion({
+    model: "text-davinci-003",
+    prompt: query,
+    temperature: 0.7,
+    max_tokens: 512,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  }).catch(err => {
+    console.error(`backend error ${err}`);
+    throw "error";
+  });
+
+  var info = response.data.choices[0].text;
+  info.replace(/\n/, '\n$&');
+  // addData(query, response, userID)
+
+  console.log("processed names request");
+  return info;
+}
+
+export function getHistory(email) {
+  return wixData.query("requests").eq("email", email).find();
+}
+
+export function addNewUser(userID, startingNormalQ, startingSpecialQ, fullName, email) {
+  return wixData.insert("userAuthen", {"userID": userID, "normalUses": startingNormalQ, "specialUses": startingSpecialQ, "fullName": fullName, "email": email}, {"suppressAuth": true});
+}
+
+export function updateStandardRun(systemUserID, remNormalUses, remSpecialUses, fullName, userID, email) {
+  return wixData.update("userAuthen", {"_id": systemUserID, "normalUses": remNormalUses - 1, "specialUses": remSpecialUses, "fullName": fullName, "userID": userID, "email": email}, {"suppressAuth": true});
+}
+
+export function queryUserAuthen(userID){
+  return wixData.query("userAuthen").eq("userID", userID).find();
+}
+
+export function updateQueries(userID, fullName, email, response, query) {
+  wixData.insert("queries", {"userId": userID, "fullName": fullName, "email": email, "result": response, "query": query}, {"suppressAuth": true}).then(function (ret) {});
+}
+
+export function updateReqs(email, fullName, prompt, info, result) {
+  wixData.insert("requests", {"fullName": fullName, "email": email, "result": result, "prompt": prompt, "info": info}, {"suppressAuth": true}).then(function (ret) {});
+}
+
+/*********
+ .jsw file
+ *********
+
+ Backend .jsw files contain functions that run on the server side but can be called from page code and frontend files.
+ Use backend functions to keep code private and hidden from a user's browser. More info:
+
+ https://support.wix.com/en/article/velo-web-modules-calling-backend-code-from-the-frontend
+
+**********/
